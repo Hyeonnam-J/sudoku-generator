@@ -1,0 +1,19 @@
+{
+    "name": "sudokugenerator",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/sudokuGenerator.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "npx tsc",
+        "prestart": "npm run build",
+        "start": "node dist/sudokuGenerator.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "typescript": "^5.5.3"
+    },
+    "type": "module"
+}
