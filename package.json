@@ -2,12 +2,12 @@
     "name": "sudokugenerator",
     "version": "1.0.0",
     "description": "",
-    "main": "dist/sudokuGenerator.js",
+    "main": "build/sudokuGenerator.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "npx tsc",
         "prestart": "npm run build",
-        "start": "node dist/sudokuGenerator.js"
+        "start": "node build/sudokuGenerator.js"
     },
     "keywords": [],
     "author": "",
