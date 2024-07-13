@@ -2,8 +2,7 @@ import { create2DEmptyArray, shuffleArray } from "./func.js";
 class SudokuGenerator {
     constructor() {
         this.SIZE = 9;
-        this.answerBoard = create2DEmptyArray(this.SIZE);
-        this.questionBoard = create2DEmptyArray(this.SIZE);
+        this.board = create2DEmptyArray(this.SIZE);
         // 행, 열, 서브그리드에 숫자 중복 체크.
         // this.subgrid[4][3] = 1; 이라면,
         // 4번 그리드에 3이란 숫자는 이미 쓰임.
@@ -14,10 +13,16 @@ class SudokuGenerator {
     }
     // 스도쿠 생성.
     generate() {
-        this.boardInit();
+        this.initBoard();
+        this.makeBoard(0);
+        const answer = this.board;
+        // todo: this.board로 question 만들기.
+        const question = this.board;
+        console.log(answer);
+        return { answer, question };
     }
     // 스도쿠 초기화.
-    boardInit() {
+    initBoard() {
         // 9x9 스도쿠 보드의 서브그리드(3x3 작은 보드) 번호가 다음과 같다고 가정.
         //
         // 0 1 2
@@ -45,10 +50,51 @@ class SudokuGenerator {
                 // k의 값은 0, 4, 8
                 const k = _diagSubgrid[Math.floor(offset / 3)];
                 this.subgrid[k][_arr[idx]] = 1;
-                this.answerBoard[offset + i][offset + j] = _arr[idx];
+                this.board[offset + i][offset + j] = _arr[idx];
             }
         }
-        console.log(this.answerBoard);
+    }
+    // 재귀적인 방법으로 퍼즐을 완성하는 메서드
+    makeBoard(boardIdx) {
+        // 퍼즐 완성.
+        if (boardIdx === this.SIZE * this.SIZE)
+            return true;
+        // 현재 boardIdx를 기반으로 현재 행(i)과 열(j)을 계산.
+        const i = Math.floor(boardIdx / this.SIZE);
+        const j = boardIdx % this.SIZE;
+        // 값이 할당되어져 있으면 다음 칸으로 이동.
+        if (this.board[i][j] !== 0)
+            return this.makeBoard(boardIdx + 1);
+        // 1 ~ 9 사이 랜덤한 숫자를 기준으로 배열 생성.
+        // randomNumber = 7이면 numbers = [8, 9, 1, 2, 3, 4, 5, 6, 7]로 초기화.
+        const randomNumber = Math.floor(Math.random() * this.SIZE) + 1; // 1 ~ 9
+        const numbers = Array.from({ length: this.SIZE }, (_, index) => {
+            return (index + randomNumber) % this.SIZE + 1;
+        });
+        for (let idx = 1; idx <= this.SIZE; idx++) {
+            // 현재 boardIdx에 넣으려는 값.
+            const candidateNumber = numbers[idx];
+            // 현재 위치 (i, j)가 속한 서브그리드 번호 k를 계산.
+            const k = Math.floor(i / 3) * 3 + Math.floor(j / 3);
+            // 중복이 없으면,
+            if (this.row[i][candidateNumber] === 0 && this.col[j][candidateNumber] === 0 && this.subgrid[k][candidateNumber] === 0) {
+                // 중복 체크 변수들을 업데이트하고 board에 후보 숫자를 할당.
+                this.row[i][candidateNumber] = this.col[j][candidateNumber] = this.subgrid[k][candidateNumber] = 1;
+                this.board[i][j] = candidateNumber;
+                // 보드의 다음 칸으로 재귀적 이동.
+                // 다음 칸에서 유효한 값을 찾을 수 없다면 현재 candidateNumber 값이 유효하지 않다는 의미.
+                // 중복 체크 변수와 board의 값을 0으로 다시 되돌리고, for문을 계속 진행한다.
+                if (this.makeBoard(boardIdx + 1)) {
+                    return true;
+                }
+                else {
+                    this.row[i][candidateNumber] = this.col[j][candidateNumber] = this.subgrid[k][candidateNumber] = 0;
+                    this.board[i][j] = 0;
+                }
+            }
+        }
+        // 현재 위치에서 유효한 값을 찾지 못했다면 false를 리턴.
+        return false;
     }
 }
 new SudokuGenerator().generate();
