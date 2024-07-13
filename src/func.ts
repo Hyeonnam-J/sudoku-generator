@@ -4,7 +4,7 @@ export function create2DEmptyArray(size: number): number[][] {
 }
 
 // Fisher-Yates shuffle.
-export function shuffleArray(arr: number[]): void {
+export function shuffleArray<T>(arr: T[]): void {
     for (let i = arr.length - 1; i > 0; i--) {
         const index = Math.floor(Math.random() * (i + 1)); // 0부터 i까지의 난수 인덱스 생성
         const temp = arr[index];

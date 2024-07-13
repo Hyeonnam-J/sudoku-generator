@@ -18,11 +18,12 @@ class SudokuGenerator {
         this.initBoard();
         this.makeBoard(0);
         const answer = this.board;
+        console.log('answer ->', answer);
 
-        // todo: this.board로 question 만들기.
+        this.removeBoardValue(55);
         const question = this.board;
+        console.log('question ->', question);
 
-        console.log(answer);
         return { answer, question };
     }
 
@@ -111,6 +112,164 @@ class SudokuGenerator {
         
         // 현재 위치에서 유효한 값을 찾지 못했다면 false를 리턴.
         return false;
+    }
+
+    // 완성된 보드에서 랜덤하게 값을 제거해 문제를 생성.
+    private removeBoardValue(numToRemove: number): void {
+        // 한계.
+        if (numToRemove > 60) numToRemove = 60;
+
+        // 보드의 좌표를 순서대로 초기화한 후,
+        // 이후 numToRemove만큼 제거할 때 순차적으로 제거할 것이므로 그 전에 먼저 섞는다.
+        const positions: Position[] = [];
+        for (let i = 0; i < this.SIZE; i++) {
+            for (let j = 0; j < this.SIZE; j++) {
+                positions.push(new Position(i, j));
+            }
+        }
+        shuffleArray(positions);
+        
+        this.removeWithBackTracking(numToRemove, positions);
+    }
+
+    private removeWithBackTracking(numToRemove: number, positions: Position[]): boolean {
+        // 제거할 수를 다 제거하면 메서드 종료.
+        if (numToRemove === 0) return true;
+
+        for (let idx = 0; idx < positions.length; idx++) {
+            // 보드 인덱스를 행, 열로 치환.
+            const i = positions[idx].x;
+            const j = positions[idx].y;
+
+            // 보드에서 값 가져와 제거.
+            const targetValue = this.board[i][j];
+            this.removeNumber(i, j, targetValue);
+
+            // 제거하고 나서 유일해 확인.
+            // 유일해가 보증된다면 다음 칸을 제거하기 위해 재귀적 호출.
+            // 유일해가 없다면 롤백.
+            if (this.hasUniqueSolution()) {
+                // 현재 positions를 얕은 복사하여 newPositions에 할당.
+                const newPositions = positions.slice();
+                // newPositions[idx] 삭제.
+                newPositions.splice(idx, 1);
+
+                if (this.removeWithBackTracking(numToRemove - 1, newPositions)) return true;
+            } else {
+                this.restoreNumber(i, j, targetValue);
+            }
+        }
+
+        return false;
+    }
+
+    private removeNumber(x: number, y: number, num: number): void {
+        this.board[x][y] = 0;
+        this.row[x][num] = 0;
+        this.col[y][num] = 0;
+        this.subgrid[Math.floor(x / 3) * 3 + Math.floor(y / 3)][num] = 0;
+    }
+
+    private restoreNumber(x: number, y: number, num: number): void {
+        this.board[x][y] = num;
+        this.row[x][num] = 1;
+        this.col[y][num] = 1;
+        this.subgrid[Math.floor(x / 3) * 3 + Math.floor(y / 3)][num] = 1;
+    }
+
+    private hasUniqueSolution(): boolean {
+        // 유일한 해를 검증하는 백트래킹 메서드
+        return this.proveWithBackTracking() === 1;
+    }
+    
+    private proveWithBackTracking(): number {
+        // 해의 개수를 담을 변수.
+        let countSolution: number = 0;
+
+        // 탐색할 다음 빈 칸 좌표를 받는다.
+        let nextEmpty: number[] | null = this.findNextEmptyCell(this.board);
+
+        // 탐색할 다음 빈 칸이 없으면, 메서드 종료.
+        if (nextEmpty === null) return 1;
+    
+        let i: number = nextEmpty[0];
+        let j: number = nextEmpty[1];
+    
+        // 수를 하나씩 넣어본다.
+        for (let num = 1; num <= this.SIZE; num++) {
+            // 넣어본 수가 유효하다면,
+            if (this.isValid(i, j, num)) {
+                // 저장하고,
+                this.board[i][j] = num;
+                this.row[i][num] = 1;
+                this.col[j][num] = 1;
+                this.subgrid[Math.floor(i / 3) * 3 + Math.floor(j / 3)][num] = 1;
+    
+                // 다음 칸을 탐색.
+                countSolution += this.proveWithBackTracking();
+    
+                // 유일해를 검증하기 위해 넣었던 값을 되돌린다.
+                this.board[i][j] = 0;
+                this.row[i][num] = 0;
+                this.col[j][num] = 0;
+                this.subgrid[Math.floor(i / 3) * 3 + Math.floor(j / 3)][num] = 0;
+    
+                // 유일해가 아니라면 더 연산하지 않고 종료.
+                if (countSolution > 1) return countSolution;
+            }
+        }
+
+        return countSolution;
+    }
+
+    // 효율적인 백트래킹을 위한 휴리스틱.
+    private findNextEmptyCell(_board: number[][]): number[] | null {
+        // 한 칸에 들어갈 수 있는 경우의 수는 1 ~ 9로 옵션의 수는 최대 9개.
+        // 가장 적은 경우의 수를 담을 변수. 최댓값으로 초기화.
+        let minOptions: number = this.SIZE;
+
+        // 가장 적은 경우의 수를 가진 셀의 좌표를 담은 변수.
+        let minOptionsCell: number[] | null = null;
+    
+        // 모든 위치를 탐색하여,
+        for (let i = 0; i < this.SIZE; i++) {
+            for (let j = 0; j < this.SIZE; j++) {
+                // 현재 위치가 비었다면,
+                // 현재 위치에 1 ~ 9 중 몇 개나 들어갈 수 있는지 카운트.
+                if (_board[i][j] === 0) {
+                    let options: number = 0;
+                    for (let num = 1; num <= this.SIZE; num++) {
+                        if (this.isValid(i, j, num)) options++;
+                    }
+                    if (options < minOptions) {
+                        minOptions = options;
+                        minOptionsCell = [i, j];
+                    }
+                }
+            }
+        }
+        
+        return minOptionsCell;
+    }
+
+    // 행, 열 그리고 보드 인덱스에 삽입된 값을 받아 중복 체크.
+    private isValid(x: number, y: number, num: number): boolean {
+        let d: number = Math.floor(x / 3) * 3 + Math.floor(y / 3);
+        if (this.row[x][num] === 1) return false;
+        if (this.col[y][num] === 1) return false;
+        if (this.subgrid[d][num] === 1) return false;
+        return true;
+    }
+}
+
+// 보드 인덱스 좌표.
+class Position {
+    public x: number;
+    public y: number;
+
+    constructor(x: number, y: number){
+        this.x = x;
+        this.y = y;
     }
 }
 
