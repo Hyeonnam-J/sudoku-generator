@@ -22,6 +22,7 @@ class SudokuGenerator {
         // todo: this.board로 question 만들기.
         const question = this.board;
 
+        console.log(answer);
         return { answer, question };
     }
 
