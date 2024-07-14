@@ -1,4 +1,5 @@
 import { create2DEmptyArray, shuffleArray } from "./func.js";
+import { Position } from "./position.js";
 
 class SudokuGenerator {
 
@@ -259,17 +260,6 @@ class SudokuGenerator {
         if (this.col[y][num] === 1) return false;
         if (this.subgrid[d][num] === 1) return false;
         return true;
-    }
-}
-
-// 보드 인덱스 좌표.
-class Position {
-    public x: number;
-    public y: number;
-
-    constructor(x: number, y: number){
-        this.x = x;
-        this.y = y;
     }
 }
 
